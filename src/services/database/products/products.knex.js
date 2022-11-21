@@ -1,18 +1,19 @@
 const knexConfig = require('../config');
-const knex = require('knex');
+const knexDb = require('knex');
 const { v4: uuidv4 } = require('uuid');
 
 class Products{
     constructor(){
-        this.knex = knex(knexConfig);
+        this.knexConfig = knexConfig;
     }
 
     async createProduct(product){
+        const knex = knexDb(this.knexConfig);
         Object.assign(product, {
             code: uuidv4()
         })
         return new Promise((resolve, reject) => {
-            this.knex('products').insert(product).then(() => {
+            knex('products').insert(product).then(() => {
                 resolve({
                     success: true,
                     data: product
@@ -20,14 +21,15 @@ class Products{
             }).catch(err => {
                 reject(err)
             }).finally(() =>{
-                this.knex.destroy();
+                knex.destroy();
             });
         })
     }
 
     async getProduct(productCode){
+        const knex = knexDb(this.knexConfig);
         try{
-            const data = await this.knex('products').where('code', '=', productCode).select('*');
+            const data = await knex('products').where('code', '=', productCode).select('*');
             if(data.length == 0){
                 return {
                     success: true,
@@ -35,12 +37,14 @@ class Products{
                 }
             }
             const proudctFormatted = JSON.parse(JSON.stringify(data[0]));
+            knex.destroy();
             return {
                 success: true,
                 data: proudctFormatted
             }
         }catch(err){
             console.error(err);
+            knex.destroy();
             return {
                 success: false,
                 message: err.message
